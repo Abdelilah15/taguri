@@ -1,6 +1,8 @@
 package com.tamazightgames.taguri
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,6 +16,7 @@ import com.google.firebase.auth.FirebaseAuth
 fun LoginScreen(
         onLoginSuccess: () -> Unit,
         onVerificationNeeded: () -> Unit,
+        onBackClick: () -> Unit,
         isLoginMode: Boolean
 ) {
     val auth = FirebaseAuth.getInstance()
@@ -23,6 +26,23 @@ fun LoginScreen(
 
     // On change le titre selon le mode
     val screenTitle = if (isLoginMode) "Connexion" else "Créer un compte"
+
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        // --- 1. LE BOUTON RETOUR (En haut à gauche) ---
+        IconButton(
+            onClick = { onBackClick() },
+            modifier = Modifier
+                .align(Alignment.TopStart) // Collé en haut à gauche
+                .padding(16.dp) // Un peu de marge
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Retour",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),

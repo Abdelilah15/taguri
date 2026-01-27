@@ -58,7 +58,8 @@ class MainActivity : ComponentActivity() {
                     LoginScreen(
                         isLoginMode = isLoginMode,
                         onLoginSuccess = { currentScreen = "jeu" },
-                        onVerificationNeeded = { currentScreen = "verification" } // <--- NOUVEAU
+                        onVerificationNeeded = { currentScreen = "verification" },
+                        onBackClick = { currentScreen = "accueil" }
                     )
                 } else if (currentScreen == "verification") {
                     VerificationScreen(
