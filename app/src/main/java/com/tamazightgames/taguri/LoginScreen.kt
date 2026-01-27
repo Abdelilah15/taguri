@@ -11,7 +11,11 @@ import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 // ON AJOUTE UN NOUVEAU PARAMÈTRE : isLoginMode
-fun LoginScreen(onLoginSuccess: () -> Unit, isLoginMode: Boolean) {
+fun LoginScreen(
+        onLoginSuccess: () -> Unit,
+        onVerificationNeeded: () -> Unit,
+        isLoginMode: Boolean
+) {
     val auth = FirebaseAuth.getInstance()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -83,9 +87,15 @@ fun LoginScreen(onLoginSuccess: () -> Unit, isLoginMode: Boolean) {
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
-                                    message = "Compte créé ! Tu peux te connecter."
-                                    // Optionnel : On peut connecter l'utilisateur directement ici aussi
-                                    onLoginSuccess()
+                                    auth.currentUser?.sendEmailVerification()
+                                        ?.addOnCompleteListener { emailTask ->
+                                            if (emailTask.isSuccessful) {
+                                                // 2. On va vers l'écran de vérification
+                                                onVerificationNeeded()
+                                            } else {
+                                                message = "Erreur d'envoi mail: ${emailTask.exception?.message}"
+                                            }
+                                        }
                                 } else {
                                     message = "Erreur: ${task.exception?.message}"
                                 }

@@ -1,9 +1,11 @@
 package com.tamazightgames.taguri
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -19,44 +21,50 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import com.facebook.CallbackManager
+import com.tamazightgames.taguri.ui.theme.TaguriTheme
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
+    val callbackManager = CallbackManager.Factory.create()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             TaguriTheme {
                 var currentScreen by remember { mutableStateOf("accueil") }
-                // Nouvelle variable : est-ce qu'on veut se connecter (true) ou s'inscrire (false) ?
                 var isLoginMode by remember { mutableStateOf(true) }
+                val auth = FirebaseAuth.getInstance()
 
-                val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+                // Au lancement, si l'utilisateur est connecté, on vérifie son email
                 LaunchedEffect(Unit) {
-                    if (auth.currentUser != null) {
-                        currentScreen = "jeu"
+                    val user = auth.currentUser
+                    if (user != null) {
+                        if (user.isEmailVerified) {
+                            currentScreen = "jeu" // Tout est bon
+                        } else {
+                            currentScreen = "verification" // Il doit finir de valider
+                        }
                     }
                 }
 
                 if (currentScreen == "accueil") {
                     WelcomeScreen(
-                        onEmailClick = {
-                            isLoginMode = true // On veut se connecter
-                            currentScreen = "login"
-                        },
-                        onSignUpClick = {
-                            isLoginMode = false // On veut s'inscrire
-                            currentScreen = "login"
-                        },
-                        onLoginSuccess = {
-                            currentScreen = "jeu"
-                        }
+                        callbackManager = callbackManager,
+                        onEmailClick = { isLoginMode = true; currentScreen = "login" },
+                        onSignUpClick = { isLoginMode = false; currentScreen = "login" },
+                        onLoginSuccess = { currentScreen = "jeu" }
                     )
                 } else if (currentScreen == "login") {
                     LoginScreen(
-                        isLoginMode = isLoginMode, // On envoie l'info à l'écran
-                        onLoginSuccess = {
-                            currentScreen = "jeu"
-                        }
+                        isLoginMode = isLoginMode,
+                        onLoginSuccess = { currentScreen = "jeu" },
+                        onVerificationNeeded = { currentScreen = "verification" } // <--- NOUVEAU
+                    )
+                } else if (currentScreen == "verification") {
+                    VerificationScreen(
+                        onVerificationSuccess = { currentScreen = "jeu" }
                     )
                 } else if (currentScreen == "jeu") {
                     GameScreen()
@@ -65,6 +73,13 @@ class MainActivity : ComponentActivity() {
         }
 
     }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        callbackManager.onActivityResult(requestCode, resultCode, data)
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
 }
 
 @Composable
