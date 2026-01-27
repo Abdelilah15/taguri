@@ -14,6 +14,6 @@ fun GameScreen() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text("Écran du Jeu (À faire plus tard).")
+        Text("Écran du Jeu (À faire plus tard)")
     }
 }

@@ -178,7 +178,7 @@ fun WelcomeScreen(
 
         // Lien CRÉER UN COMPTE
         TextButton(onClick = { onSignUpClick() }) {
-            Text(";Pas de compte ? Créer un compte", color = Color.Gray)
+            Text("Pas de compte ? Créer un compte", color = Color.Gray)
         }
     }
 }

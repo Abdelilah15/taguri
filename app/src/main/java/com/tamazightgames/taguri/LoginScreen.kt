@@ -76,7 +76,7 @@ fun LoginScreen(
                     }
                 }
             ) {
-                Text("Se connecter.")
+                Text("Se connecter")
             }
         } else {
             // MODE INSCRIPTION (SIGN UP)
