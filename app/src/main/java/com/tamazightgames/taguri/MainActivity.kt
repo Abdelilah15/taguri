@@ -27,8 +27,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             TaguriTheme {
                 var currentScreen by remember { mutableStateOf("accueil") }
+                // Nouvelle variable : est-ce qu'on veut se connecter (true) ou s'inscrire (false) ?
+                var isLoginMode by remember { mutableStateOf(true) }
 
-                // On vérifie si l'utilisateur est déjà connecté (pour éviter de se reconnecter à chaque fois)
                 val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
                 LaunchedEffect(Unit) {
                     if (auth.currentUser != null) {
@@ -39,14 +40,20 @@ class MainActivity : ComponentActivity() {
                 if (currentScreen == "accueil") {
                     WelcomeScreen(
                         onEmailClick = {
+                            isLoginMode = true // On veut se connecter
+                            currentScreen = "login"
+                        },
+                        onSignUpClick = {
+                            isLoginMode = false // On veut s'inscrire
                             currentScreen = "login"
                         },
                         onLoginSuccess = {
-                            currentScreen = "jeu" // <--- C'EST CETTE LIGNE QUI MANQUAIT !
+                            currentScreen = "jeu"
                         }
                     )
                 } else if (currentScreen == "login") {
                     LoginScreen(
+                        isLoginMode = isLoginMode, // On envoie l'info à l'écran
                         onLoginSuccess = {
                             currentScreen = "jeu"
                         }
@@ -56,6 +63,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
     }
 }
 

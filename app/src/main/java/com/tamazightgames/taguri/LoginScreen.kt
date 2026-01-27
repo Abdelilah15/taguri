@@ -10,25 +10,25 @@ import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit) {
-    // On récupère l'outil d'authentification de Firebase
+// ON AJOUTE UN NOUVEAU PARAMÈTRE : isLoginMode
+fun LoginScreen(onLoginSuccess: () -> Unit, isLoginMode: Boolean) {
     val auth = FirebaseAuth.getInstance()
-
-    // Variables pour stocker ce que l'utilisateur écrit (Email, Mot de passe)
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf("") } // Pour afficher les erreurs ou succès
+    var message by remember { mutableStateOf("") }
+
+    // On change le titre selon le mode
+    val screenTitle = if (isLoginMode) "Connexion" else "Créer un compte"
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp), // Prend tout l'écran avec une marge
-        verticalArrangement = Arrangement.Center, // Centre verticalement
-        horizontalAlignment = Alignment.CenterHorizontally // Centre horizontalement
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Bienvenue !", style = MaterialTheme.typography.headlineMedium)
+        Text(text = screenTitle, style = MaterialTheme.typography.headlineMedium)
 
-        Spacer(modifier = Modifier.height(32.dp)) // Espace vide
+        Spacer(modifier = Modifier.height(32.dp))
 
-        // Champ Email
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -38,58 +38,61 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Champ Mot de passe
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Mot de passe") },
-            visualTransformation = PasswordVisualTransformation(), // Cache le mot de passe
+            visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Affichage du message (Erreur ou Succès)
         if (message.isNotEmpty()) {
             Text(text = message, color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Les Boutons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            // Bouton LOGIN
-            Button(onClick = {
-                if (email.isNotEmpty() && password.isNotEmpty()) {
-                    auth.signInWithEmailAndPassword(email, password)
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                message = "Connexion réussie !"
-                                onLoginSuccess()
-                            } else {
-                                message = "Erreur: ${task.exception?.message}"
+        // --- LA LOGIQUE DE CHOIX DU BOUTON ---
+        if (isLoginMode) {
+            // MODE CONNEXION (LOGIN)
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                        auth.signInWithEmailAndPassword(email, password)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    message = "Connexion réussie !"
+                                    onLoginSuccess()
+                                } else {
+                                    message = "Erreur: ${task.exception?.message}"
+                                }
                             }
-                        }
+                    }
                 }
-            }) {
+            ) {
                 Text("Se connecter")
             }
-
-            // Bouton SIGN UP
-            OutlinedButton(onClick = {
-                if (email.isNotEmpty() && password.isNotEmpty()) {
-                    auth.createUserWithEmailAndPassword(email, password)
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                message = "Compte créé ! Connecte-toi."
-                            } else {
-                                message = "Erreur: ${task.exception?.message}"
+        } else {
+            // MODE INSCRIPTION (SIGN UP)
+            OutlinedButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                        auth.createUserWithEmailAndPassword(email, password)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    message = "Compte créé ! Tu peux te connecter."
+                                    // Optionnel : On peut connecter l'utilisateur directement ici aussi
+                                    onLoginSuccess()
+                                } else {
+                                    message = "Erreur: ${task.exception?.message}"
+                                }
                             }
-                        }
+                    }
                 }
-            }) {
+            ) {
                 Text("S'inscrire")
             }
         }

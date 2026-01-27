@@ -27,7 +27,8 @@ import com.google.firebase.auth.GoogleAuthProvider
 @Composable
 fun WelcomeScreen(
     onEmailClick: () -> Unit,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    onSignUpClick: () -> Unit
 ) {
 
     val context = LocalContext.current
@@ -116,7 +117,7 @@ fun WelcomeScreen(
 
         // Bouton GOOGLE
         OutlinedButton(
-            onClick = {  },
+            onClick = { launcher.launch(googleSignInClient.signInIntent) },
             modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -137,7 +138,7 @@ fun WelcomeScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // Lien CRÉER UN COMPTE
-        TextButton(onClick = { /* Action plus tard */ }) {
+        TextButton(onClick = { onSignUpClick() }) {
             Text("Pas de compte ? Créer un compte", color = Color.Gray)
         }
     }
