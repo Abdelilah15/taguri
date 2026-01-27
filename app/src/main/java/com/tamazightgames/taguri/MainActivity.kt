@@ -1,11 +1,9 @@
 package com.tamazightgames.taguri
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -21,13 +19,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import com.facebook.CallbackManager
-import com.tamazightgames.taguri.ui.theme.TaguriTheme
-import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
-    val callbackManager = CallbackManager.Factory.create()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -73,13 +66,6 @@ class MainActivity : ComponentActivity() {
         }
 
     }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        callbackManager.onActivityResult(requestCode, resultCode, data)
-        super.onActivityResult(requestCode, resultCode, data)
-    }
-
 }
 
 @Composable

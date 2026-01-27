@@ -68,7 +68,7 @@ fun VerificationScreen(onVerificationSuccess: () -> Unit) {
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth().height(50.dp)
         ) {
-            Text("J'ai cliqué sur le lien")
+            Text("J'ai cliqué sur le lien.")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
