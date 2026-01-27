@@ -18,14 +18,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 
 @Composable
 fun WelcomeScreen(
+    callbackManager: CallbackManager,
     onEmailClick: () -> Unit,
     onLoginSuccess: () -> Unit,
     onSignUpClick: () -> Unit
@@ -34,6 +41,33 @@ fun WelcomeScreen(
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
     var errorMessage by remember { mutableStateOf("") }
+
+    // --- CONFIGURATION FACEBOOK (On "écoute" si la connexion réussit) ---
+    DisposableEffect(Unit) {
+        val loginManager = LoginManager.getInstance()
+        val callback = object : FacebookCallback<LoginResult> {
+            override fun onSuccess(result: LoginResult) {
+                // 1. Facebook a dit OUI -> On récupère le "Token"
+                val token = result.accessToken
+                // 2. On l'échange contre un accès Firebase
+                val credential = FacebookAuthProvider.getCredential(token.token)
+                auth.signInWithCredential(credential)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            onLoginSuccess() // VICTOIRE !
+                        } else {
+                            errorMessage = "Erreur Firebase FB: ${task.exception?.message}"
+                        }
+                    }
+            }
+            override fun onCancel() { errorMessage = "Connexion annulée" }
+            override fun onError(error: FacebookException) {
+                errorMessage = "Erreur Facebook: ${error.message}"
+            }
+        }
+        loginManager.registerCallback(callbackManager, callback)
+        onDispose { }
+    }
 
     // 1. Configuration de Google Sign-In
     // On demande l'email et un "ID Token" pour Firebase
@@ -128,7 +162,12 @@ fun WelcomeScreen(
 
         // Bouton FACEBOOK
         OutlinedButton(
-            onClick = { /* Action plus tard */ },
+            onClick = {
+                LoginManager.getInstance().logInWithReadPermissions(
+                    context as Activity,
+                    listOf("email", "public_profile")
+                )
+            },
             modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(12.dp)
         ) {
