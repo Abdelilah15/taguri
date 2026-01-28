@@ -1,5 +1,6 @@
 package com.tamazightgames.taguri
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -8,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -23,10 +25,13 @@ fun LoginScreen(
         isLoginMode: Boolean
 ) {
     val auth = FirebaseAuth.getInstance()
+    val context = LocalContext.current
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var showResetDialog by remember { mutableStateOf(false) }
 
     // On change le titre selon le mode
     val screenTitle = if (isLoginMode) "Connexion" else "Créer un compte"
@@ -94,16 +99,26 @@ fun LoginScreen(
             }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         if (message.isNotEmpty()) {
             Text(text = message, color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         // --- LA LOGIQUE DE CHOIX DU BOUTON ---
         if (isLoginMode) {
             // MODE CONNEXION (LOGIN)
+
+            // LIEN "MOT DE PASSE OUBLIÉ ?"
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                TextButton(onClick = { showResetDialog = true }) {
+                    Text("Mot de passe oublié ?", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
@@ -159,5 +174,56 @@ fun LoginScreen(
             }
         }
     }
-}
 
+    // --- 3. FENÊTRE DE RÉCUPÉRATION (DIALOG) ---
+    if (showResetDialog) {
+        var resetEmail by remember { mutableStateOf(email) } // On pré-remplit avec l'email déjà tapé
+        var isSending by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            title = { Text("Récupérer le mot de passe") },
+            text = {
+                Column {
+                    Text("Entrez votre email pour recevoir le lien de réinitialisation.")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = resetEmail,
+                        onValueChange = { resetEmail = it },
+                        label = { Text("Email") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (resetEmail.isNotEmpty()) {
+                            isSending = true
+                            // Envoi de l'email via Firebase
+                            auth.sendPasswordResetEmail(resetEmail)
+                                .addOnCompleteListener { task ->
+                                    isSending = false
+                                    if (task.isSuccessful) {
+                                        Toast.makeText(context, "Email envoyé ! Vérifiez votre boîte mail.", Toast.LENGTH_LONG).show()
+                                        showResetDialog = false
+                                    } else {
+                                        Toast.makeText(context, "Erreur: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                        }
+                    },
+                    enabled = !isSending
+                ) {
+                    Text(if (isSending) "Envoi..." else "Envoyer")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) {
+                    Text("Annuler")
+                }
+            }
+        )
+    }
+}
