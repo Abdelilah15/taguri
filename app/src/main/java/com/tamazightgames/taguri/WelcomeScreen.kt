@@ -2,6 +2,7 @@ package com.tamazightgames.taguri
 
 import androidx.compose.foundation.Image
 import android.app.Activity
+import android.text.style.UnderlineSpan
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.facebook.CallbackManager
@@ -178,7 +180,14 @@ fun WelcomeScreen(
 
         // Lien CRÉER UN COMPTE
         TextButton(onClick = { onSignUpClick() }) {
-            Text("Pas de compte ? Créer un compte", color = Color.Gray)
+            Text(
+                text= "Pas de compte ? ",
+                color = Color.Gray
+            )
+            Text(
+                text = "Créer un compte",
+                textDecoration = TextDecoration.Underline
+            )
         }
     }
 }

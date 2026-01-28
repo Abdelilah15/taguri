@@ -3,13 +3,18 @@ package com.tamazightgames.taguri
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
+
 
 @Composable
 // ON AJOUTE UN NOUVEAU PARAMÈTRE : isLoginMode
@@ -23,6 +28,7 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     // On change le titre selon le mode
     val screenTitle = if (isLoginMode) "Connexion" else "Créer un compte"
@@ -34,7 +40,10 @@ fun LoginScreen(
             onClick = { onBackClick() },
             modifier = Modifier
                 .align(Alignment.TopStart) // Collé en haut à gauche
-                .padding(16.dp) // Un peu de marge
+                .padding(
+                    start = 4.dp,
+                    top = 16.dp
+                ) // Un peu de marge
         ) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
@@ -57,6 +66,7 @@ fun LoginScreen(
             value = email,
             onValueChange = { email = it },
             label = { Text("Email") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -66,8 +76,25 @@ fun LoginScreen(
             value = password,
             onValueChange = { password = it },
             label = { Text("Mot de passe") },
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
+            visualTransformation = if (passwordVisible)
+                VisualTransformation.None
+            else
+                PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        imageVector = if (passwordVisible)
+                            Icons.Default.Visibility
+                        else
+                            Icons.Default.VisibilityOff,
+                        contentDescription = if (passwordVisible)
+                            "Masquer le mot de passe"
+                        else
+                            "Afficher le mot de passe"
+                    )
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -99,18 +126,24 @@ fun LoginScreen(
                 Text("Se connecter")
             }
         } else {
-            // MODE INSCRIPTION (SIGN UP)
+            // MODE INSCRIPTION
             OutlinedButton(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
-                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                    // 1. Validation de sécurité du mot de passe
+                    if (password.length < 8) {
+                        message = "Le mot de passe doit faire au moins 8 caractères."
+                    } else if (password.none { !it.isLetterOrDigit() }) {
+                        // On vérifie s'il y a au moins un caractère qui n'est NI une lettre NI un chiffre
+                        message = "Ajoutez un caractère spécial (ex: @, #, !, $)."
+                    } else if (email.isNotEmpty() && password.isNotEmpty()) {
+                        // 2. Si tout est bon, on lance l'inscription Firebase
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
                                     auth.currentUser?.sendEmailVerification()
                                         ?.addOnCompleteListener { emailTask ->
                                             if (emailTask.isSuccessful) {
-                                                // 2. On va vers l'écran de vérification
                                                 onVerificationNeeded()
                                             } else {
                                                 message = "Erreur d'envoi mail: ${emailTask.exception?.message}"
@@ -120,6 +153,8 @@ fun LoginScreen(
                                     message = "Erreur: ${task.exception?.message}"
                                 }
                             }
+                    } else {
+                        message = "Veuillez remplir tous les champs."
                     }
                 }
             ) {
