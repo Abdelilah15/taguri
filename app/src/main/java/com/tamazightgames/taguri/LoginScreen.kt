@@ -3,13 +3,11 @@ package com.tamazightgames.taguri
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -82,17 +80,16 @@ fun LoginScreen(
                 PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
             trailingIcon = {
+                val image = if (passwordVisible)
+                    painterResource(id = R.drawable.icon_visibility) // Ton icône œil
+                else
+                    painterResource(id = R.drawable.icon_visibilityoff) // Ton icône œil barré
+
+                // Description pour l'accessibilité (aveugles)
+                val description = if (passwordVisible) "Cacher le mot de passe" else "Voir le mot de passe"
+
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        imageVector = if (passwordVisible)
-                            Icons.Default.Visibility
-                        else
-                            Icons.Default.VisibilityOff,
-                        contentDescription = if (passwordVisible)
-                            "Masquer le mot de passe"
-                        else
-                            "Afficher le mot de passe"
-                    )
+                    Icon(painter = image, contentDescription = description)
                 }
             }
         )
