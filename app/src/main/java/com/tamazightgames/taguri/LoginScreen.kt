@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 
 
 @Composable
@@ -209,7 +210,21 @@ fun LoginScreen(
                                         Toast.makeText(context, "Email envoyé ! Vérifiez votre boîte mail.", Toast.LENGTH_LONG).show()
                                         showResetDialog = false
                                     } else {
-                                        Toast.makeText(context, "Erreur: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                        // ICI : On vérifie si l'erreur est "Utilisateur inconnu"
+                                        if (task.exception is FirebaseAuthInvalidUserException) {
+                                            Toast.makeText(
+                                                context,
+                                                "Aucun compte n'existe avec cet email.",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        } else {
+                                            // Autres erreurs (internet, etc.)
+                                            Toast.makeText(
+                                                context,
+                                                "Erreur: ${task.exception?.message}",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
                                     }
                                 }
                         }
