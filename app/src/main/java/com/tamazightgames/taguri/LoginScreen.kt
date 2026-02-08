@@ -1,6 +1,8 @@
 package com.tamazightgames.taguri
 
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -9,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -34,7 +37,21 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
 
-    // On change le titre selon le mode
+    var isLoading by remember { mutableStateOf(false) }
+
+
+    if (isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.3f)) // Fond gris semi-transparent
+                .clickable(enabled = false) {}, // Bloque les clics en dessous
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color(0xFFFF9800))
+        }
+    }
+
     val screenTitle = if (isLoginMode) "Connexion" else "Créer un compte"
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -47,7 +64,8 @@ fun LoginScreen(
                 .padding(
                     start = 4.dp,
                     top = 16.dp
-                ) // Un peu de marge
+                ),
+            enabled = !isLoading
         ) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
@@ -71,7 +89,8 @@ fun LoginScreen(
             onValueChange = { email = it },
             label = { Text("Email") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -97,7 +116,8 @@ fun LoginScreen(
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(painter = image, contentDescription = description)
                 }
-            }
+            },
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -122,58 +142,62 @@ fun LoginScreen(
 
             Button(
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
                 onClick = {
                     if (email.isNotEmpty() && password.isNotEmpty()) {
+                        isLoading = true
                         auth.signInWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
+                                isLoading = false
                                 if (task.isSuccessful) {
                                     message = "Connexion réussie !"
                                     onLoginSuccess()
                                 } else {
-                                    message = "Erreur: ${task.exception?.message}"
+                                    Toast.makeText(context, "Erreur: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                                 }
                             }
+                    } else {
+                        Toast.makeText(context, "Remplissez tous les champs", Toast.LENGTH_SHORT).show()
                     }
                 }
             ) {
                 Text("Se connecter")
             }
         } else {
-            // MODE INSCRIPTION
+            // INSCRIPTION
             OutlinedButton(
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
                 onClick = {
-                    // 1. Validation de sécurité du mot de passe
                     if (password.length < 8) {
-                        message = "Le mot de passe doit faire au moins 8 caractères."
+                        Toast.makeText(context, "Mot de passe trop court (min 8)", Toast.LENGTH_SHORT).show()
                     } else if (password.none { !it.isLetterOrDigit() }) {
-                        // On vérifie s'il y a au moins un caractère qui n'est NI une lettre NI un chiffre
-                        message = "Ajoutez un caractère spécial (ex: @, #, !, $)."
-                    } else if (email.isNotEmpty() && password.isNotEmpty()) {
-                        // 2. Si tout est bon, on lance l'inscription Firebase
+                        Toast.makeText(context, "Il faut un caractère spécial (@, #, !)", Toast.LENGTH_SHORT).show()
+                    } else if (email.isNotEmpty()) {
+                        isLoading = true // CHARGEMENT
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
                                     auth.currentUser?.sendEmailVerification()
-                                        ?.addOnCompleteListener { emailTask ->
-                                            if (emailTask.isSuccessful) {
-                                                onVerificationNeeded()
-                                            } else {
-                                                message = "Erreur d'envoi mail: ${emailTask.exception?.message}"
-                                            }
+                                        ?.addOnCompleteListener {
+                                            isLoading = false // FIN
+                                            onVerificationNeeded()
                                         }
                                 } else {
-                                    message = "Erreur: ${task.exception?.message}"
+                                    isLoading = false // FIN (Erreur)
+                                    Toast.makeText(context, "Erreur: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                                 }
                             }
                     } else {
-                        message = "Veuillez remplir tous les champs."
+                        Toast.makeText(context, "Remplissez tous les champs", Toast.LENGTH_SHORT).show()
                     }
                 }
-            ) {
-                Text("S'inscrire")
+            ) { Text("S'inscrire")
             }
+
         }
+
+
     }
 
     // --- 3. FENÊTRE DE RÉCUPÉRATION (DIALOG) ---
