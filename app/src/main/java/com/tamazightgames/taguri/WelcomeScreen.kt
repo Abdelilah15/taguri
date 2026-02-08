@@ -17,9 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import com.facebook.CallbackManager
 import com.facebook.FacebookCallback
 import com.facebook.FacebookException
@@ -31,8 +35,7 @@ import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import androidx.compose.ui.res.stringResource
-
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 
 
 @Composable
@@ -44,6 +47,7 @@ fun WelcomeScreen(
 ) {
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
+    val uriHandler = LocalUriHandler.current
 
     // --- ÉTAT DE CHARGEMENT ---
     var isLoading by remember { mutableStateOf(false) }
@@ -63,7 +67,12 @@ fun WelcomeScreen(
                             Toast.makeText(context, "Connexion réussie !", Toast.LENGTH_SHORT).show()
                             onLoginSuccess()
                         } else {
-                            Toast.makeText(context, "Erreur Firebase: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                            // GESTION DU CONFLIT
+                            if (task.exception is FirebaseAuthUserCollisionException) {
+                                Toast.makeText(context, "Un compte existe déjà avec cet email via Google ou Mot de passe.", Toast.LENGTH_LONG).show()
+                            } else {
+                                Toast.makeText(context, "Erreur: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                            }
                         }
                     }
             }
@@ -105,7 +114,12 @@ fun WelcomeScreen(
                             Toast.makeText(context, "Connexion réussie !", Toast.LENGTH_SHORT).show()
                             onLoginSuccess()
                         } else {
-                            Toast.makeText(context, "Erreur Firebase: ${authTask.exception?.message}", Toast.LENGTH_LONG).show()
+                            // GESTION DU CONFLIT
+                            if (authTask.exception is FirebaseAuthUserCollisionException) {
+                                Toast.makeText(context, "Un compte existe déjà avec cet email via Facebook ou Mot de passe.", Toast.LENGTH_LONG).show()
+                            } else {
+                                Toast.makeText(context, "Erreur: ${authTask.exception?.message}", Toast.LENGTH_LONG).show()
+                            }
                         }
                     }
             } catch (e: ApiException) {
@@ -170,7 +184,53 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             TextButton(onClick = { onSignUpClick() }, enabled = !isLoading) {
-                Text("Pas de compte ? Créer un compte", color = Color.Gray)
+                Text("Pas de compte ? ", color = Color.Gray)
+                Text("Créer un compte", textDecoration = TextDecoration.Underline)
+            }
+
+            Spacer(modifier = Modifier.height(40.dp))
+        }
+
+        // --- SECTION LÉGALE (Tout en bas) ---
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter) // Collé en bas
+                .padding(bottom = 16.dp, start = 24.dp, end = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "En continuant, vous acceptez nos",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center
+            )
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Conditions",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable {
+                        // Ouvre une page web (Mets ton vrai lien plus tard)
+                        uriHandler.openUri("https://www.google.com")
+                    }
+                )
+                Text(" et ", fontSize = 12.sp, color = Color.Gray)
+                Text(
+                    text = "Politique de confidentialité",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable {
+                        // Ouvre une page web
+                        uriHandler.openUri("https://www.google.com")
+                    }
+                )
             }
         }
 
@@ -183,7 +243,7 @@ fun WelcomeScreen(
                     .clickable(enabled = false) {}, // Bloque les clics en dessous
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = Color(0xFFFF9800))
+                CircularProgressIndicator(color = Color( 0xFFFF9800))
             }
         }
     }

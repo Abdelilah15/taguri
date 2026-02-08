@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 
 
 @Composable
@@ -185,7 +186,12 @@ fun LoginScreen(
                                         }
                                 } else {
                                     isLoading = false // FIN (Erreur)
-                                    Toast.makeText(context, "Erreur: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                    // GESTION DU CONFLIT
+                                    if (task.exception is FirebaseAuthUserCollisionException) {
+                                        Toast.makeText(context, "Cet email est déjà utilisé (peut-être via Google/Facebook ?).", Toast.LENGTH_LONG).show()
+                                    } else {
+                                        Toast.makeText(context, "Erreur: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                    }
                                 }
                             }
                     } else {
