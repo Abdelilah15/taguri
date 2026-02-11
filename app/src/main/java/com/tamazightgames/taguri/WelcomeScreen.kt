@@ -48,6 +48,7 @@ fun WelcomeScreen(
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
     val uriHandler = LocalUriHandler.current
+    val firestoreHelper = remember { FirestoreHelper() }
 
     // --- ÉTAT DE CHARGEMENT ---
     var isLoading by remember { mutableStateOf(false) }
@@ -62,10 +63,23 @@ fun WelcomeScreen(
                 val credential = FacebookAuthProvider.getCredential(token.token)
                 auth.signInWithCredential(credential)
                     .addOnCompleteListener { task ->
-                        isLoading = false // FIN DU CHARGEMENT
                         if (task.isSuccessful) {
-                            Toast.makeText(context, "Connexion réussie !", Toast.LENGTH_SHORT).show()
-                            onLoginSuccess()
+                            // Connexion réussie -> On enregistre dans Firestore
+                            val user = auth.currentUser
+                            if (user != null) {
+                                firestoreHelper.createUserProfile(user,
+                                    onSuccess = {
+                                        isLoading = false
+                                        Toast.makeText(context, "Connexion réussie !", Toast.LENGTH_SHORT).show()
+                                        onLoginSuccess()
+                                    },
+                                    onFailure = {
+                                        // On laisse passer même si la BDD échoue (pour ne pas bloquer le joueur)
+                                        isLoading = false
+                                        onLoginSuccess()
+                                    }
+                                )
+                            }
                         } else {
                             // GESTION DU CONFLIT
                             if (task.exception is FirebaseAuthUserCollisionException) {
@@ -109,10 +123,22 @@ fun WelcomeScreen(
                 val credential = GoogleAuthProvider.getCredential(account.idToken, null)
                 auth.signInWithCredential(credential)
                     .addOnCompleteListener { authTask ->
-                        isLoading = false // FIN DU CHARGEMENT
                         if (authTask.isSuccessful) {
-                            Toast.makeText(context, "Connexion réussie !", Toast.LENGTH_SHORT).show()
-                            onLoginSuccess()
+                            // Connexion réussie -> On enregistre dans Firestore
+                            val user = auth.currentUser
+                            if (user != null) {
+                                firestoreHelper.createUserProfile(user,
+                                    onSuccess = {
+                                        isLoading = false
+                                        Toast.makeText(context, "Connexion réussie !", Toast.LENGTH_SHORT).show()
+                                        onLoginSuccess()
+                                    },
+                                    onFailure = {
+                                        isLoading = false
+                                        onLoginSuccess()
+                                    }
+                                )
+                            }
                         } else {
                             // GESTION DU CONFLIT
                             if (authTask.exception is FirebaseAuthUserCollisionException) {

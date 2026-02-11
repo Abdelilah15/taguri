@@ -71,9 +71,7 @@ class MainActivity : ComponentActivity() {
                     "verification" -> VerificationScreen(
                         onVerificationSuccess = { currentScreen = "jeu" }
                     )
-                    "jeu" -> GameScreen(
-
-                    )
+                    "jeu" -> GameScreen()
                 }
             }
         }

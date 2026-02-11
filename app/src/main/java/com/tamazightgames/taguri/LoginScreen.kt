@@ -30,6 +30,7 @@ fun LoginScreen(
         isLoginMode: Boolean
 ) {
     val auth = FirebaseAuth.getInstance()
+    val firestoreHelper = remember { FirestoreHelper() }
     val context = LocalContext.current
 
     var email by remember { mutableStateOf("") }
@@ -149,11 +150,27 @@ fun LoginScreen(
                         isLoading = true
                         auth.signInWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
-                                isLoading = false
                                 if (task.isSuccessful) {
-                                    message = "Connexion réussie !"
-                                    onLoginSuccess()
+                                    // Connexion réussie -> On vérifie/crée le profil Firestore aussi (par sécurité)
+                                    val user = auth.currentUser
+                                    if (user != null) {
+                                        firestoreHelper.createUserProfile(user,
+                                            onSuccess = {
+                                                isLoading = false
+                                                onLoginSuccess()
+                                            },
+                                            onFailure = { error ->
+                                                isLoading = false
+                                                // On laisse passer quand même, c'est juste la BDD qui a échoué
+                                                onLoginSuccess()
+                                            }
+                                        )
+                                    } else {
+                                        isLoading = false
+                                        onLoginSuccess()
+                                    }
                                 } else {
+                                    isLoading = false
                                     Toast.makeText(context, "Erreur: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                                 }
                             }
@@ -179,16 +196,28 @@ fun LoginScreen(
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
-                                    auth.currentUser?.sendEmailVerification()
-                                        ?.addOnCompleteListener {
-                                            isLoading = false // FIN
-                                            onVerificationNeeded()
-                                        }
+                                    val user = auth.currentUser
+                                    // 1. On crée le profil dans Firestore
+                                    if (user != null) {
+                                        firestoreHelper.createUserProfile(user,
+                                            onSuccess = {
+                                                // 2. On envoie l'email de vérification
+                                                user.sendEmailVerification()
+                                                    .addOnCompleteListener {
+                                                        isLoading = false
+                                                        onVerificationNeeded()
+                                                    }
+                                            },
+                                            onFailure = { error ->
+                                                isLoading = false
+                                                Toast.makeText(context, "Erreur création profil: $error", Toast.LENGTH_LONG).show()
+                                            }
+                                        )
+                                    }
                                 } else {
-                                    isLoading = false // FIN (Erreur)
-                                    // GESTION DU CONFLIT
+                                    isLoading = false
                                     if (task.exception is FirebaseAuthUserCollisionException) {
-                                        Toast.makeText(context, "Cet email est déjà utilisé (peut-être via Google/Facebook ?).", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Cet email est déjà utilisé.", Toast.LENGTH_LONG).show()
                                     } else {
                                         Toast.makeText(context, "Erreur: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                                     }
