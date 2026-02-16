@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
@@ -16,10 +18,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,6 +34,32 @@ fun GameScreen() {
 
     var showProfileMenu by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
+
+    var pseudo by remember { mutableStateOf("Chargement...") }
+    var email by remember { mutableStateOf("") }
+
+    var isEditing by remember { mutableStateOf(false) }
+    var newPseudo by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            // 1. L'email est facile, il est directement dans l'authentification
+            email = user.email ?: ""
+
+            // 2. Le pseudo est dans la base de données Firestore
+            FirebaseFirestore.getInstance().collection("users").document(user.uid).get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        // On remplace "Chargement..." par le vrai pseudo
+                        pseudo = document.getString("pseudo") ?: "Joueur"
+                    }
+                }
+                .addOnFailureListener {
+                    pseudo = "Erreur connexion"
+                }
+        }
+    }
 
     Scaffold(
         // --- LA BARRE DU HAUT ---
@@ -95,7 +128,10 @@ fun GameScreen() {
 
         if (showProfileMenu) {
             ModalBottomSheet(
-                onDismissRequest = { showProfileMenu = false },
+                onDismissRequest = {
+                    showProfileMenu = false
+                    isEditing = false
+                },
                 sheetState = sheetState,
                 containerColor = Color.White // Fond du menu
             ) {
@@ -107,18 +143,8 @@ fun GameScreen() {
                         .padding(bottom = 48.dp), // Marge en bas
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // 1. BOUTON FERMER (Aligné à droite)
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                        IconButton(onClick = { showProfileMenu = false }) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Fermer",
-                                tint = Color.Gray
-                            )
-                        }
-                    }
 
-                    // 2. IMAGE DE PROFIL (Grande)
+                    // IMAGE DE PROFIL (Grande)
                     Icon(
                         imageVector = Icons.Default.AccountCircle,
                         contentDescription = "Mon Profil",
@@ -128,15 +154,122 @@ fun GameScreen() {
                         tint = Color(0xFF1565C0)
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    // 3. NOM DU JOUEUR
-                    Text(
-                        text = "Mon Nom", // Placeholder pour l'instant
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
+                    // NOM DU JOUEUR
+                    // --- ZONE NOM MODIFIABLE ---
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (isEditing) {
+                            // --- MODE ÉDITION (Champ de texte + Bouton Valider) ---
+                            BasicTextField(
+                                value = newPseudo,
+                                onValueChange = { newPseudo = it },
+                                singleLine = true,
+
+
+
+                                // CONFIGURATION DU STYLE
+                                textStyle = LocalTextStyle.current.copy(
+                                    fontSize = 24.sp, // Même taille que le texte normal
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    color = Color.Black
+                                ),
+
+                                modifier = Modifier
+                                    .widthIn(min = 40.dp) // Largeur minimum (pour ne pas disparaître si vide)
+                                    .wrapContentWidth(),   // S'agrandit avec le texte
+
+                                decorationBox = { innerTextField ->
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        // A. Le champ de texte avec ton padding personnalisé
+                                        Box(
+                                            modifier = Modifier
+                                                .drawBehind {
+                                                    val strokeWidth = 2.dp.toPx() // Épaisseur de la ligne
+                                                    val y = size.height - strokeWidth / 2
+                                                    drawLine(
+                                                        color = Color(0xFF1565C0), // Bleu
+                                                        start = Offset(0f, y),
+                                                        end = Offset(size.width, y),
+                                                        strokeWidth = strokeWidth
+                                                    )
+                                                }
+                                                .padding(bottom = 2.dp),
+                                            contentAlignment = Alignment.Center
+
+                                        ) {
+
+                                            if (newPseudo.isEmpty()) {
+                                                Text(
+                                                    text = "new name",
+                                                    color = Color.Gray,
+                                                    fontSize = 24.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+
+                                            innerTextField() // C'est l'endroit où le curseur clignote
+                                        }
+                                    }
+                                }
+                            )
+
+                            Spacer(modifier = Modifier.width(4.dp))
+
+                            // Bouton ENREGISTRER
+                            IconButton(onClick = {
+                                if (newPseudo.isNotBlank()) {
+                                    val user = FirebaseAuth.getInstance().currentUser
+                                    if (user != null) {
+                                        // Mise à jour Firestore
+                                        FirebaseFirestore.getInstance().collection("users")
+                                            .document(user.uid)
+                                            .update("pseudo", newPseudo)
+                                            .addOnSuccessListener {
+                                                pseudo = newPseudo // On met à jour l'affichage
+                                                isEditing = false  // On quitte le mode édition
+                                            }
+                                    }
+                                }
+                            }) {
+                                Icon(Icons.Default.Check, "Valider", tint = Color(0xFF4CAF50)) // Vert
+                            }
+
+                        } else {
+                            // --- MODE LECTURE (Texte + Bouton Modifier) ---
+                            Text(
+                                text = pseudo,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+
+                            Spacer(modifier = Modifier.width(4.dp))
+
+                            // Bouton CRAYON
+                            IconButton(onClick = {
+                                newPseudo = pseudo // On pré-remplit avec le nom actuel
+                                isEditing = true   // On active le mode édition
+                            }) {
+                                Icon(Icons.Default.Edit, "Modifier", tint = Color.Gray)
+                            }
+                        }
+                    }
+
+                    if (email.isNotEmpty()) {
+                        Text(
+                            text = email,
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(32.dp))
 
