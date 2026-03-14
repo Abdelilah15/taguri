@@ -10,6 +10,10 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.facebook.CallbackManager
 import com.tamazightgames.taguri.ui.theme.TaguriTheme
 import com.google.firebase.auth.FirebaseAuth
+import com.tamazightgames.taguri.ui.screens.GameScreen
+import com.tamazightgames.taguri.ui.screens.LoginScreen
+import com.tamazightgames.taguri.ui.screens.VerificationScreen
+import com.tamazightgames.taguri.ui.screens.WelcomeScreen
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {

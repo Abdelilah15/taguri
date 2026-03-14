@@ -1,4 +1,4 @@
-package com.tamazightgames.taguri
+package com.tamazightgames.taguri.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.tamazightgames.taguri.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

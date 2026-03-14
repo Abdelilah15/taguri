@@ -1,4 +1,4 @@
-package com.tamazightgames.taguri
+package com.tamazightgames.taguri.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.tamazightgames.taguri.FirestoreHelper
+import com.tamazightgames.taguri.R
 
 
 @Composable

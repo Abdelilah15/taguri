@@ -1,7 +1,6 @@
-package com.tamazightgames.taguri
+package com.tamazightgames.taguri.ui.screens
 
 import android.app.Activity
-import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,6 +35,8 @@ import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.tamazightgames.taguri.FirestoreHelper
+import com.tamazightgames.taguri.R
 
 
 @Composable

@@ -1,4 +1,4 @@
-package com.tamazightgames.taguri
+package com.tamazightgames.taguri.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
