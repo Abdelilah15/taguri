@@ -14,42 +14,40 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.tamazightgames.taguri.ui.viewmodel.PlayViewModel
+import com.tamazightgames.taguri.ui.viewmodel.PlayViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayScreen(onBackClick: () -> Unit) {
+fun PlayScreen(niveau: Int, onBackClick: () -> Unit) {
+    val context = LocalContext.current
+
+    // 1. INSTANCIATION DU CHEF D'ORCHESTRE (VIEWMODEL)
+    val viewModel: PlayViewModel = viewModel(
+        factory = PlayViewModelFactory(context, niveau)
+    )
+
+    // 2. OBSERVATION DES ÉTATS (L'écran se redessine si ça change)
+    val puzzle by viewModel.puzzle.collectAsState()
+    val selectedCells by viewModel.selectedCells.collectAsState()
+    val foundWords by viewModel.foundWords.collectAsState()
+    val isGameWon by viewModel.isGameWon.collectAsState()
 
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
-    var showWinDialog by remember { mutableStateOf(false) }
-
-    // --- 1. LES DONNÉES DU NIVEAU (Simulation du JSON) ---
-    val gridSize = 4 // Grille 4x4
-    val grille = listOf(
-        listOf('I', 'Z', 'M', 'N'), // IZM = Lion (Horizontal)
-        listOf('A', 'F', 'G', 'A'),
-        listOf('F', 'U', 'S', 'A'), // FUS = Main (Horizontal)
-        listOf('T', 'I', 'R', 'R')
-    )
-    val motsATrouver = listOf("IZM", "FUS", "AFGAN", "TIRRA")
-
-    // --- 2. LES ÉTATS DU JEU (Mémoire de l'écran) ---
-    // Garde en mémoire les cases en train d'être glissées (Ligne, Colonne)
-    var selectedCells by remember { mutableStateOf(listOf<Pair<Int, Int>>()) }
-
-    // Garde en mémoire les mots déjà trouvés
-    var motsTrouves by remember { mutableStateOf(setOf<String>()) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mots Mêlés", fontWeight = FontWeight.Bold) },
+                title = { Text("Niveau $niveau", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) { Icon(Icons.Default.ArrowBack, "Retour") }
                 },
@@ -57,6 +55,18 @@ fun PlayScreen(onBackClick: () -> Unit) {
             )
         }
     ) { innerPadding ->
+
+        // Si le puzzle n'est pas encore chargé depuis le JSON, on met un cercle d'attente
+        if (puzzle == null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFFFF9800))
+            }
+            return@Scaffold
+        }
+
+        val currentPuzzle = puzzle!!
+        val gridSize = currentPuzzle.gridSize
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -64,8 +74,7 @@ fun PlayScreen(onBackClick: () -> Unit) {
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            // --- 3. GALERIE D'IMAGES EN HAUT ---
+            // Galerie d'images en haut (statique pour l'instant)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -82,87 +91,63 @@ fun PlayScreen(onBackClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Affiche les mots déjà trouvés
+            // Compteur de mots trouvés dynamiques
             Text(
-                text = "Trouvés : ${motsTrouves.joinToString(", ")}",
+                text = "Trouvés : ${foundWords.joinToString(", ")} / ${currentPuzzle.wordsToFind.size}",
                 color = Color(0xFF4CAF50),
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // --- 4. LA GRILLE INTERACTIVE ---
+            // LA GRILLE INTERACTIVE
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f) // Reste un carré parfait
                     .background(Color.Transparent)
-                    // C'EST ICI QU'ON DÉTECTE LE GLISSEMENT DU DOIGT
                     .pointerInput(Unit) {
                         detectDragGestures(
+                            // On envoie juste les coordonnées au ViewModel !
                             onDragStart = { offset ->
-                                // Quand on pose le doigt, on calcule sur quelle case on est
                                 val cellWidth = size.width / gridSize
                                 val cellHeight = size.height / gridSize
                                 val col = (offset.x / cellWidth).toInt()
                                 val row = (offset.y / cellHeight).toInt()
-
                                 if (row in 0 until gridSize && col in 0 until gridSize) {
-                                    selectedCells = listOf(Pair(row, col))
+                                    viewModel.startSelection(row, col)
                                 }
                             },
                             onDrag = { change, _ ->
-                                // Pendant qu'on glisse, on ajoute les cases traversées
                                 val cellWidth = size.width / gridSize
                                 val cellHeight = size.height / gridSize
                                 val col = (change.position.x / cellWidth).toInt()
                                 val row = (change.position.y / cellHeight).toInt()
-
-                                val currentCell = Pair(row, col)
                                 if (row in 0 until gridSize && col in 0 until gridSize) {
-                                    if (!selectedCells.contains(currentCell)) {
-                                        selectedCells = selectedCells + currentCell
-                                    }
+                                    viewModel.onCellSelected(row, col)
                                 }
                             },
                             onDragEnd = {
-                                val motForme = selectedCells.map { grille[it.first][it.second] }.joinToString("")
-
-                                if (motsATrouver.contains(motForme) && !motsTrouves.contains(motForme)) {
-                                    // Le mot est bon et pas encore trouvé !
-                                    val nouvelleListe = motsTrouves + motForme
-                                    motsTrouves = nouvelleListe
-
-                                    // --- NOUVEAU : VÉRIFICATION DE VICTOIRE ---
-                                    if (nouvelleListe.size == motsATrouver.size) {
-                                        showWinDialog = true // On affiche le pop-up
-                                    }
-                                }
-
-                                selectedCells = emptyList()
+                                viewModel.endSelection()
                             }
                         )
                     }
             ) {
-                // On dessine visuellement les lignes et colonnes
+                // DESSIN DES CASES
                 Column(modifier = Modifier.fillMaxSize()) {
                     for (row in 0 until gridSize) {
                         Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                             for (col in 0 until gridSize) {
-
                                 val isSelected = selectedCells.contains(Pair(row, col))
-                                val isAlreadyFound = motsTrouves.any { motTrouve ->
-                                    // (Astuce simplifiée pour garder les mots trouvés allumés)
-                                    // Dans un vrai jeu, on enregistrerait les positions exactes
-                                    motTrouve.contains(grille[row][col]) &&
-                                            (motTrouve == "IZM" && row == 0 || motTrouve == "FUS" && row == 2)
-                                }
+                                val currentLetter = currentPuzzle.grid[row][col]
 
-                                // Couleur de la case
+                                // Simplification visuelle : si la lettre fait partie d'un mot trouvé, on la colorie
+                                val isAlreadyFound = foundWords.any { it.contains(currentLetter) }
+
                                 val backgroundColor = when {
-                                    isSelected -> Color(0xFFFFCC80) // Orange quand on glisse dessus
-                                    isAlreadyFound -> Color(0xFFA5D6A7) // Vert quand c'est validé
-                                    else -> Color(0xFFF5F5F5) // Gris clair normal
+                                    isSelected -> Color(0xFFFFCC80) // Orange quand on glisse
+                                    isAlreadyFound -> Color(0xFFA5D6A7) // Vert quand validé
+                                    else -> Color(0xFFF5F5F5) // Gris normal
                                 }
 
                                 Box(
@@ -176,7 +161,7 @@ fun PlayScreen(onBackClick: () -> Unit) {
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = grille[row][col].toString(),
+                                        text = currentLetter.toString(),
                                         fontSize = 32.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = if (isSelected || isAlreadyFound) Color.Black else Color.DarkGray
@@ -190,28 +175,31 @@ fun PlayScreen(onBackClick: () -> Unit) {
         }
     }
 
-    if (showWinDialog) {
+    // 3. LE POP-UP DE VICTOIRE (Se déclenche tout seul si isGameWon devient 'true')
+    if (isGameWon) {
         AlertDialog(
-            onDismissRequest = { /* On ne fait rien, on oblige à cliquer sur Continuer */ },
+            onDismissRequest = { },
             title = {
                 Text("🎉 Niveau Complété !", fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50))
             },
             text = {
-                Text("Bravo ! Tu as trouvé tous les mots et gagné 5 points.")
+                // On récupère les points dynamiquement depuis le JSON !
+                Text("Bravo ! Tu as gagné ${puzzle?.rewardPoints ?: 0} points.")
             },
             confirmButton = {
                 Button(
                     onClick = {
                         val user = auth.currentUser
                         if (user != null) {
-                            // On ajoute 5 points et on passe au puzzle 2 !
+                            // On ajoute les vrais points du niveau et on passe au niveau suivant
                             db.collection("users").document(user.uid).update(
-                                "score", FieldValue.increment(5),
+                                "score", FieldValue.increment((puzzle?.rewardPoints ?: 0).toLong()),
                                 "puzzleActuel", FieldValue.increment(1)
                             ).addOnSuccessListener {
-                                showWinDialog = false
-                                onBackClick() // On retourne au menu principal
+                                onBackClick()
                             }
+                        } else {
+                            onBackClick() // Sécurité si on joue hors ligne/sans compte
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0))

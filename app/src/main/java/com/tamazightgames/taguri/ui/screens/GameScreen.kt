@@ -90,7 +90,10 @@ fun GameScreen() {
     if (currentScreen == "play") {
         // Si l'état est "play", on affiche le nouvel écran
         // Et si on clique sur retour, on remet l'état à "game"
-        PlayScreen(onBackClick = { currentScreen = "game" })
+        PlayScreen(
+            niveau = puzzleActuel,
+            onBackClick = { currentScreen = "game" }
+        )
 
     } else {
 

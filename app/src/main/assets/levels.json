@@ -1,0 +1,39 @@
+{
+  "chapters": [
+    {
+      "id": 1,
+      "title": "La Culture Amazigh",
+      "description": "Découvrez les mots fondamentaux.",
+      "puzzles": [
+        {
+          "type": "WordSearch",
+          "id": 1,
+          "level": 1,
+          "rewardPoints": 5,
+          "gridSize": 4,
+          "grid": [
+            ["I", "Z", "M", "N"],
+            ["A", "F", "G", "A"],
+            ["F", "U", "S", "A"],
+            ["T", "I", "R", "R"]
+          ],
+          "wordsToFind": ["IZM", "FUS", "AFGAN", "TIRRA"]
+        },
+        {
+          "type": "WordSearch",
+          "id": 2,
+          "level": 2,
+          "rewardPoints": 5,
+          "gridSize": 4,
+          "grid": [
+            ["A", "Y", "I", "S"],
+            ["M", "A", "N", "A"],
+            ["A", "M", "A", "N"],
+            ["R", "G", "A", "Z"]
+          ],
+          "wordsToFind": ["AYIS", "AMAN", "ARGAZ"]
+        }
+      ]
+    }
+  ]
+}
