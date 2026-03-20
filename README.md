@@ -142,9 +142,11 @@ Intégration Firebase multi-canal :
 
 ### Phase 1 — MVP Fondations *(en cours)*
 - [x] Authentification multi-canaux (Email, Google, Facebook)
-- [x] Puzzle de type Mots Mêlés fonctionnel
-- [x] Système de progression scores / niveaux
-- [x] Stockage données Firebase (profil utilisateur)
+- [ ] Puzzle de type Mots Mêlés
+- [ ] Puzzle de type Mots Croisés
+- [ ] Puzzle de type Citation (Quote Puzzle)
+- [ ] Système de progression scores / niveaux
+- [ ] Stockage données Firebase (profil utilisateur)
 - [ ] Polish UI/UX et tests
 
 ### Phase 2 — Gamification
