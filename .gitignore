@@ -1,0 +1,63 @@
+# ==============================================================================
+# TAGURI - Android Project .gitignore
+# ==============================================================================
+
+# ---- Gradle ----
+.gradle/
+build/
+**/build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+.gradletasknamecache
+
+# ---- Android Studio / IntelliJ IDEA ----
+*.iml
+*.iws
+*.ipr
+.idea/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- APK / AAB outputs ----
+*.apk
+*.aab
+*.ap_
+
+# ---- Keystore & signing (NEVER commit these) ----
+*.jks
+*.keystore
+keystore.properties
+release.keystore
+
+# ---- Firebase / Google Services (NEVER commit these) ----
+# google-services.json contains your Firebase project API keys.
+# Keep it local; share it securely with team members via a password manager.
+google-services.json
+app/google-services.json
+
+# ---- Environment & secrets ----
+.env
+.env.local
+.env.*.local
+secrets.properties
+secret.properties
+
+# ---- Test output ----
+test-results/
+*/test-results/
+
+# ---- ProGuard ----
+*.class

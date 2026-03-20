@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">taguri</string>
+    <!-- Replace with your actual Web Client ID from Google Cloud Console / Firebase Console.
+         Go to Firebase Console → Project Settings → Your apps → Web app → OAuth 2.0 Web client ID.
+         IMPORTANT: Do NOT commit google-services.json to version control. -->
+    <string name="my_web_client_id">YOUR_WEB_CLIENT_ID_HERE</string>
 </resources>

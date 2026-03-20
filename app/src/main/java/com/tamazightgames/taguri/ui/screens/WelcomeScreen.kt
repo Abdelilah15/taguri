@@ -106,6 +106,14 @@ fun WelcomeScreen(
 
     // --- CONFIGURATION GOOGLE ---
     val clientId = stringResource(R.string.my_web_client_id)
+    // Warn the developer if the placeholder has not been replaced yet
+    if (clientId == "YOUR_WEB_CLIENT_ID_HERE") {
+        Toast.makeText(
+            context,
+            "⚠️ Config manquante : remplacez my_web_client_id dans strings.xml",
+            Toast.LENGTH_LONG
+        ).show()
+    }
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(clientId)
